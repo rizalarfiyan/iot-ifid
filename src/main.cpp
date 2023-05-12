@@ -1,40 +1,31 @@
 #include <Arduino.h>
-#include <Adafruit_Sensor.h>
-#include <DHT.h>
 
-#define DHT_SENSOR_PIN 15
-#define DHT_SENSOR_TYPE DHT11
+#define ADC_VREF_mV 5000.0
+#define ADC_RESOLUTION 4095.0
+#define LM35_SENSOR 36
 
 #define RED_LED 12
 #define GREEN_LED 13
 #define BUZZER 14
 
-DHT dht_sensor(DHT_SENSOR_PIN, DHT_SENSOR_TYPE);
-
-void setup() {
+void setup()
+{
   Serial.begin(115200);
+
   pinMode(GREEN_LED, OUTPUT);
   pinMode(RED_LED, OUTPUT);
   pinMode(BUZZER, OUTPUT);
-
-  dht_sensor.begin();
 }
 
-void loop() {
-  float humi  = dht_sensor.readHumidity();
-  float temp = dht_sensor.readTemperature();
+void loop()
+{
+  int adcVal = analogRead(LM35_SENSOR);
+  float milliVolt = adcVal * (ADC_VREF_mV / ADC_RESOLUTION);
+  float temp = milliVolt / 10;
 
-  if ( isnan(temp) || isnan(humi)) {
-    Serial.println("Failed to read from DHT sensor!");
-  } else {
-    Serial.print("Humidity: ");
-    Serial.print(humi);
-    Serial.print("%");
-    Serial.print("  |  ");
-    Serial.print("Temperature: ");
-    Serial.print(temp);
-    Serial.println("°C");
-  }
+  Serial.print("Temperature: ");
+  Serial.print(temp);
+  Serial.println("°C");
 
-  delay(2000);
+  delay(1000);
 }
