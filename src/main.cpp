@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <LiquidCrystal_I2C.h>
+#include <ShiftRegister74HC595.h>
 
 #define ADC_VREF_mV 5000.0
 #define ADC_RESOLUTION 4095.0
@@ -10,6 +11,12 @@
 #define RED_LED 12
 #define GREEN_LED 13
 #define BUZZER 14
+
+#define DATA_PIN 25
+#define LATCH_PIN 33
+#define CLOCK_PIN 32
+
+ShiftRegister74HC595<1> sr(DATA_PIN, CLOCK_PIN, LATCH_PIN);
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
