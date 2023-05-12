@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <LiquidCrystal_I2C.h>
 
 #define ADC_VREF_mV 5000.0
 #define ADC_RESOLUTION 4095.0
@@ -9,6 +10,8 @@
 #define RED_LED 12
 #define GREEN_LED 13
 #define BUZZER 14
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 void setup()
 {
@@ -21,6 +24,9 @@ void setup()
   pinMode(LM35_SENSOR, INPUT);
   pinMode(FLAME_SENSOR, INPUT);
   pinMode(GAS_SENSOR, INPUT);
+
+  lcd.init();
+  lcd.backlight();
 }
 
 void loop()
@@ -47,6 +53,13 @@ void loop()
   } else {
     Serial.println("tidak ada api");
   }
+
+  lcd.setCursor(0, 0);
+  lcd.printf("Temp: %.2f", temp);
+  lcd.print((char)223);
+  lcd.print("C");
+  lcd.setCursor(0, 1);
+  lcd.printf("Gas : %.2f ppm", gasRaw);
 
   delay(1000);
 }
