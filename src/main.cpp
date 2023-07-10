@@ -35,16 +35,20 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 const unsigned long SENSOR_DELAY = 1000;
 millisDelay sensorDelay;
 
-const unsigned long NOTIFICATION_DELAY = 5000;
+const unsigned long NOTIFICATION_DELAY = 200;
 millisDelay notificationDelay;
 
 WidgetLCD blynkLcd(V2);
 
-float temp, gas;
+float temp = 0.0;
+int gas = 0;
 bool flameStatus = false;
+bool isAlarm = false;
+bool stateNotification = false;
 DynamicJsonDocument data(1024);
 
 void triggerAction();
+void triggerWebhook();
 void notificationAction();
 void readSensors();
 
@@ -94,33 +98,65 @@ void loop()
 {
   Blynk.run();
   notificationAction();
+  triggerAction();
   readSensors();
 }
 
 void triggerAction() {
-  char outputData[1024];
   bool highTemp = temp >= 80;
-  bool highGas = gas > 4000;
+  bool highGas = gas > 6000;
   if (highGas) {
     data["status"] = "gas menaik";
     Serial.println("Gas Menaik");
-  }
-
-  if (highTemp) {
-    data["status"] = "gas menaik";
+    isAlarm = false;
+    sr.set(0, HIGH);
+    sr.set(1, LOW);
+    blynkLcd.clear();
+    blynkLcd.print(0, 0, "Status:");
+    blynkLcd.print(0, 1, "Gas Naik");
+    triggerWebhook();
+  } else if (highTemp) {
+    data["status"] = "suhu menaik";
     Serial.println("Suhu menaik");
-  }
-
-  if (highGas && highTemp) {
-    data["status"] = "gas menaik";
+    isAlarm = false;
+    sr.set(0, HIGH);
+    sr.set(1, LOW);
+    blynkLcd.clear();
+    blynkLcd.print(0, 0, "Status:");
+    blynkLcd.print(0, 1, "Suhu Naik");
+    triggerWebhook();
+  } else if (highGas && highTemp) {
+    data["status"] = "gas dan suhu menaik";
     Serial.println("Gas dan suhu menaik");
-  }
-
-  if (highGas && highTemp && flameStatus) {
-    data["status"] = "gas menaik";
+    isAlarm = true;
+    sr.set(0, HIGH);
+    sr.set(1, LOW);
+    blynkLcd.clear();
+    blynkLcd.print(0, 0, "Status:");
+    blynkLcd.print(0, 1, "Gas Suhu Naik");
+    triggerWebhook();
+  } else if (highGas && highTemp && flameStatus) {
+    data["status"] = "Gas dan suhu menaik, ada api";
     Serial.println("Gas dan suhu menaik, ada api");
+    isAlarm = true;
+    sr.set(0, HIGH);
+    sr.set(1, HIGH);
+    blynkLcd.clear();
+    blynkLcd.print(0, 0, "Status:");
+    blynkLcd.print(0, 1, "Warning");
+    triggerWebhook();
+  } else {
+    blynkLcd.clear();
+    blynkLcd.print(0, 0, "Status:");
+    blynkLcd.print(0, 1, "Online");
+    isAlarm = false;
+    sr.set(0, LOW);
+    sr.set(1, LOW);
   }
+}
 
+void triggerWebhook() {
+  char outputData[1024];
   serializeJson(data, outputData);
   Blynk.virtualWrite(V11, outputData);
 }
@@ -129,9 +165,17 @@ void notificationAction() {
   if (notificationDelay.justFinished()) {
     notificationDelay.repeat();
 
-    blynkLcd.clear();
-    blynkLcd.print(0, 0, "Status:");
-    blynkLcd.print(0, 1, "Online");
+    if (isAlarm) {
+      if (stateNotification) {
+        digitalWrite(RED_LED, HIGH);
+        digitalWrite(BUZZER, HIGH);
+        stateNotification = false;
+      } else {
+        digitalWrite(RED_LED, LOW);
+        digitalWrite(BUZZER, LOW);
+        stateNotification = true;
+      }
+    }
   }
 }
 
