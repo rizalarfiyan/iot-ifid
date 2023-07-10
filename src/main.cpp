@@ -1,3 +1,4 @@
+#include <ArduinoJson.h>
 #include <Arduino.h>
 #include <WiFi.h>
 #include <LiquidCrystal_I2C.h>
@@ -39,6 +40,11 @@ millisDelay notificationDelay;
 
 WidgetLCD blynkLcd(V2);
 
+float temp, gas;
+bool flameStatus = false;
+DynamicJsonDocument data(1024);
+
+void triggerAction();
 void notificationAction();
 void readSensors();
 
@@ -91,12 +97,37 @@ void loop()
   readSensors();
 }
 
+void triggerAction() {
+  char outputData[1024];
+  bool highTemp = temp >= 80;
+  bool highGas = gas > 4000;
+  if (highGas) {
+    data["status"] = "gas menaik";
+    Serial.println("Gas Menaik");
+  }
+
+  if (highTemp) {
+    data["status"] = "gas menaik";
+    Serial.println("Suhu menaik");
+  }
+
+  if (highGas && highTemp) {
+    data["status"] = "gas menaik";
+    Serial.println("Gas dan suhu menaik");
+  }
+
+  if (highGas && highTemp && flameStatus) {
+    data["status"] = "gas menaik";
+    Serial.println("Gas dan suhu menaik, ada api");
+  }
+
+  serializeJson(data, outputData);
+  Blynk.virtualWrite(V11, outputData);
+}
+
 void notificationAction() {
   if (notificationDelay.justFinished()) {
     notificationDelay.repeat();
-
-    Serial.println("Subject My Blynk project is online.");
-    Blynk.logEvent("Subject My Blynk project is online.");
 
     blynkLcd.clear();
     blynkLcd.print(0, 0, "Status:");
@@ -111,10 +142,9 @@ void readSensors()
 
     int tempRaw = analogRead(LM35_SENSOR);
     float tempMilliVolt = tempRaw * (ADC_VREF_mV / ADC_RESOLUTION);
-    float temp = tempMilliVolt / 10;
+    temp = tempMilliVolt / 10;
 
-    int gasRaw = analogRead(GAS_SENSOR);
-
+    gas = analogRead(GAS_SENSOR);
     int flameRaw = digitalRead(FLAME_SENSOR);
 
     Serial.print("Temperature: ");
@@ -122,11 +152,12 @@ void readSensors()
     Serial.print("°C");
     Serial.print(" ~ ");
     Serial.print("Gas: ");
-    Serial.print(gasRaw);
+    Serial.print(gas);
     Serial.print("PPM");
     Serial.print(" ~ ");
 
-    if (flameRaw != HIGH) {
+    flameStatus = flameRaw != HIGH;
+    if (flameStatus) {
       Serial.println("ada api");
     } else {
       Serial.println("tidak ada api");
@@ -137,11 +168,15 @@ void readSensors()
     lcd.print((char)223);
     lcd.print("C");
     lcd.setCursor(0, 1);
-    lcd.printf("Gas : %d ppm", gasRaw);
+    lcd.printf("Gas : %d ppm", gas);
 
     Blynk.virtualWrite(V0, temp);
-    Blynk.virtualWrite(V1, gasRaw);
+    Blynk.virtualWrite(V1, gas);
     Blynk.virtualWrite(V2, flameRaw != HIGH);
+
+    data["flame"] = flameRaw != HIGH;
+    data["temperature"] = temp;
+    data["gas"] = gas;
   }
 }
 
