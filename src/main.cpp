@@ -106,12 +106,11 @@ void setup()
   Serial.println(WiFi.localIP());
   digitalWrite(GREEN_LED, HIGH);
 
-  blynkLcd.clear();
-  blynkLcd.print(0, 0, "IP address:");
-  blynkLcd.print(0, 1, WiFi.localIP());
+  Blynk.begin(auth, ssid, pass, server, port);
+
+  setBlynkLCD("Online");
   delay(500);
 
-  Blynk.begin(auth, ssid, pass, server, port);
   sensorDelay.start(SENSOR_DELAY);
   notificationDelay.start(NOTIFICATION_DELAY);
 }
