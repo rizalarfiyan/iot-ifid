@@ -258,7 +258,7 @@ void readSensors()
 
     gas = analogRead(GAS_SENSOR);
     int flameRaw = digitalRead(FLAME_SENSOR);
-    flameStatus = flameRaw == HIGH;
+    flameStatus = flameRaw != HIGH;
 
     Serial.print("Temperature: ");
     Serial.print(temp);
