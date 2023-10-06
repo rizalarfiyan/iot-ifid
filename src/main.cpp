@@ -129,8 +129,8 @@ void setStatus(int state) {
 }
 
 void triggerAction() {
-  bool highTemp = temp >= 80;
-  bool highGas = gas > 4000;
+  bool highTemp = temp >= 70;
+  bool highGas = gas > 2800;
   if (highGas && highTemp && flameStatus) {
     setStatus(5);
   } else if (highGas && highTemp) {
